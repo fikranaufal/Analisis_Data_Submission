@@ -1,2 +1,1 @@
-Local URL: http://localhost:8501
-Network URL: http://10.44.102.165:8501
+https://fikrandeploytest.streamlit.app/
