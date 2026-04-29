@@ -19,8 +19,8 @@ def load_data():
     
     return orders_df, order_items_df, products_df, product_category_df, order_reviews_df
 
-st.title("🛒 E-Commerce Analytics Dashboard (2018)")
-st.markdown("Dashboard ini difokuskan untuk menjawab dua pertanyaan bisnis utama berdasarkan data E-Commerce tahun 2018.")
+st.title("🛒 E-Commerce Analytics Dashboard")
+st.markdown("Dashboard ini difokuskan untuk mengeksplorasi dan menjawab dua pertanyaan bisnis utama berdasarkan data transaksi E-Commerce.")
 
 with st.spinner("Memuat data..."):
     orders_df, order_items_df, products_df, product_category_df, order_reviews_df = load_data()
@@ -31,16 +31,49 @@ main_df = main_df.merge(products_df, on='product_id', how='inner')
 main_df = main_df.merge(product_category_df, on='product_category_name', how='inner')
 main_df = main_df.merge(order_reviews_df, on='order_id', how='left')
 
-# Filter strictly for 2018
-filtered_df = main_df[main_df['order_purchase_timestamp'].dt.year == 2018].copy()
+# Menyiapkan filter interaktif di halaman utama (Fitur Interaktif)
+min_date = main_df['order_purchase_timestamp'].min().date()
+max_date = main_df['order_purchase_timestamp'].max().date()
+
+try:
+    default_start = pd.to_datetime('2018-01-01').date()
+    default_end = pd.to_datetime('2018-12-31').date()
+    if default_start < min_date: default_start = min_date
+    if default_end > max_date: default_end = max_date
+except:
+    default_start = min_date
+    default_end = max_date
+
+st.markdown("### 🗓️ Filter Rentang Waktu")
+date_range = st.date_input(
+    label="Pilih rentang waktu untuk mengubah data pada visualisasi di bawah:",
+    value=[default_start, default_end],
+    min_value=min_date,
+    max_value=max_date
+)
+
+if isinstance(date_range, tuple) and len(date_range) == 2:
+    start_date, end_date = date_range
+elif isinstance(date_range, tuple) and len(date_range) == 1:
+    start_date = date_range[0]
+    end_date = date_range[0]
+else:
+    start_date = default_start
+    end_date = default_end
+
+# Filter berdasarkan tanggal yang dipilih pada sidebar interaktif
+filtered_df = main_df[
+    (main_df['order_purchase_timestamp'].dt.date >= start_date) & 
+    (main_df['order_purchase_timestamp'].dt.date <= end_date)
+].copy()
 
 st.divider()
 
 # --- Exploratory Data Analysis (EDA) ---
-st.header("📊 Exploratory Data Analysis (EDA) - 2018")
+st.header("📊 Exploratory Data Analysis (EDA)")
 
 with st.expander("Klik di sini untuk melihat visualisasi EDA dan penjelasan mendalam"):
-    st.markdown("Bagian ini memberikan gambaran umum mengenai distribusi data pada tahun 2018 sebelum kita masuk ke pertanyaan bisnis spesifik.")
+    st.markdown("Bagian ini memberikan gambaran umum mengenai distribusi data pada rentang waktu yang dipilih sebelum kita masuk ke pertanyaan bisnis spesifik.")
     
     eda_col1, eda_col2 = st.columns(2)
     
@@ -78,13 +111,17 @@ with st.expander("Klik di sini untuk melihat visualisasi EDA dan penjelasan mend
     # 3. Tren Pemesanan per Bulan (Keseluruhan)
     st.subheader("Tren Volume Pemesanan per Bulan (Keseluruhan)")
     
-    orders_2018 = orders_df[orders_df['order_purchase_timestamp'].dt.year == 2018].copy()
-    orders_2018['purchase_month'] = orders_2018['order_purchase_timestamp'].dt.month
+    # Menggunakan filter yang sama untuk trend pemesanan
+    orders_filtered = orders_df[
+        (orders_df['order_purchase_timestamp'].dt.date >= start_date) & 
+        (orders_df['order_purchase_timestamp'].dt.date <= end_date)
+    ].copy()
+    orders_filtered['purchase_month'] = orders_filtered['order_purchase_timestamp'].dt.month
     
     fig_trend, ax_trend = plt.subplots(figsize=(10, 4))
-    sns.countplot(data=orders_2018, x='purchase_month', palette='mako', ax=ax_trend)
+    sns.countplot(data=orders_filtered, x='purchase_month', palette='mako', ax=ax_trend)
     
-    unique_months = sorted(orders_2018['purchase_month'].unique())
+    unique_months = sorted(orders_filtered['purchase_month'].unique())
     month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     labels = [month_names[m-1] for m in unique_months]
     
@@ -135,7 +172,7 @@ if not q1_df_grouped.empty:
         sns.lineplot(data=monthly_stats, x='month', y='revenue', hue='category_group', marker='o', ax=ax_rev)
         plt.xticks(rotation=45)
         plt.ylabel("Pendapatan (R$)")
-        plt.xlabel("Bulan (2018)")
+        plt.xlabel("Bulan")
         st.pyplot(fig_rev)
         
     with col2:
@@ -144,7 +181,7 @@ if not q1_df_grouped.empty:
         sns.barplot(data=monthly_stats, x='month', y='order_volume', hue='category_group', ax=ax_vol)
         plt.xticks(rotation=45)
         plt.ylabel("Volume Pemesanan")
-        plt.xlabel("Bulan (2018)")
+        plt.xlabel("Bulan")
         st.pyplot(fig_vol)
 
 st.divider()
@@ -175,4 +212,4 @@ st.markdown('''
 - **Volume vs Rata-rata:** Kategori seperti *home_comfort_2* sangat rentan karena penjualannya sangat kecil (rata-ratanya jatuh hanya karena beberapa ulasan buruk). Sementara *office_furniture* memiliki volume sangat besar, sehingga meskipun bintang 5 terlihat tinggi secara absolut, mereka menimbun ratusan ulasan bintang 1 yang harus diwaspadai.
 ''')
 
-st.sidebar.caption("Proyek Analisis Data - Dicoding\\nby Muhammad Fikran Naufal")
+st.sidebar.markdown("**Proyek Analisis Data - Dicoding**<br>by Muhammad Fikran Naufal", unsafe_allow_html=True)
