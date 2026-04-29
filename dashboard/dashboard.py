@@ -157,13 +157,22 @@ worst_5_categories = avg_rating.sort_values(by='review_score', ascending=True).h
 
 q2_worst_5_df = filtered_df[filtered_df['product_category_name_english'].isin(worst_5_categories)]
 score_distribution = q2_worst_5_df.groupby(['product_category_name_english', 'review_score']).size().unstack(fill_value=0)
+score_distribution_pct = score_distribution.div(score_distribution.sum(axis=1), axis=0) * 100
 
 fig_rating, ax_rating = plt.subplots(figsize=(10, 5))
-score_distribution.plot(kind='bar', stacked=True, ax=ax_rating, colormap='viridis')
+score_distribution_pct.plot(kind='bar', stacked=True, ax=ax_rating, colormap='viridis')
 plt.xticks(rotation=45, ha='right')
-plt.ylabel("Jumlah Penilaian")
+plt.ylabel("Persentase Penilaian (%)")
 plt.xlabel("Kategori Produk")
-plt.legend(title="Skor Penilaian (Bintang)")
+plt.legend(title="Skor Penilaian (Bintang)", bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
 st.pyplot(fig_rating)
+
+st.markdown('''
+**Penjelasan Singkat:**
+- **Mengapa masih banyak bintang 5?** Distribusi rating di platform E-Commerce ini secara keseluruhan sangat didominasi oleh bintang 5 (bisa dilihat di bagian EDA). Bahkan untuk kategori terburuk pun, sebagian besar pembeli yang merasa "biasa saja" akan tetap memberikan bintang 5.
+- **Mengapa mereka menjadi yang terburuk?** Jika dilihat dari **proporsi/persentase** (grafik di atas), kategori-kategori ini memiliki persentase rating 1, 2, dan 3 yang *jauh lebih besar* dibandingkan kategori lain yang sehat, sehingga menarik rata-rata rating mereka jatuh ke kisaran 2.2 hingga 3.5.
+- **Volume vs Rata-rata:** Kategori seperti *home_comfort_2* sangat rentan karena penjualannya sangat kecil (rata-ratanya jatuh hanya karena beberapa ulasan buruk). Sementara *office_furniture* memiliki volume sangat besar, sehingga meskipun bintang 5 terlihat tinggi secara absolut, mereka menimbun ratusan ulasan bintang 1 yang harus diwaspadai.
+''')
 
 st.sidebar.caption("Proyek Analisis Data - Dicoding\\nby Muhammad Fikran Naufal")
